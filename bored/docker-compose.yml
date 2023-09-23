@@ -1,0 +1,113 @@
+version: "2.21.0"
+
+services:
+  ####################################################### Flink #######################################################
+  flink_jobmanager:
+    image: flink:latest
+    container_name: flink_jobmanager
+    restart: always
+    expose:
+      - "6123"
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    volumes:
+      - ./flink/conf/job/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+
+  flink_taskmanager:
+    image: flink:latest
+    container_name: flink_taskmanager
+    restart: always
+    expose:
+      - "6121"
+      - "6122"
+    depends_on:
+      - flink_jobmanager
+    command: taskmanager
+    volumes:
+      - ./flink/conf/task/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
+    links:
+      - "flink_jobmanager:flink_jobmanager"
+
+  ####################################################### RocketMQ #######################################################
+  rmq_namesrv:
+    image: apache/rocketmq:latest
+    container_name: rmq_namesrv
+    restart: always
+    ports:
+      - "9876:9876"
+    environment:
+      JAVA_OPT_EXT: "-server -Xms256m -Xmx1024m"
+    volumes:
+      - ./rmq/namesrv/logs:/home/rocketmq/logs/rocketmqlogs
+      - ./rmq/namesrv/store:/root/store
+    command: ["sh", "mqnamesrv"]
+
+  rmq_broker:
+    image: apache/rocketmq:latest
+    container_name: rmq_broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    volumes:
+      - ./rmq/broker/logs:/root/logs
+      - ./rmq/broker/store:/root/store
+      - ./rmq/broker/conf/broker.conf:/home/rocketmq/broker.conf
+    links:
+      - rmq_namesrv:namesrv
+    restart: always
+    depends_on:
+      - rmq_namesrv
+    environment:
+      # namesrv 所在的IP地址
+      NAMESRV_ADDR: 172.16.5.27:9876
+      JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms256M -Xmx1024M -Xmn128m"
+    command: [ "sh","mqbroker","-c","/home/rocketmq/broker.conf","autoCreateTopicEnable=true" ]
+
+  rmq_dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmq_dashboard
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      JAVA_OPTS: -Drocketmq.namesrv.addr=172.16.5.27:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+
+  ####################################################### Redis #######################################################
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/config/redis.conf:/etc/redis/redis.conf
+      - ./redis/data:/data
+      - ./redis/logs:/logs
+    command: "redis-server"
+    environment:
+      - TZ=Asia/Shanghai
+    privileged: true
+
+  ####################################################### MySQL #######################################################
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    # 容器日志大小配置
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5g'
+    environment:
+      # 配置root密码
+      MYSQL_ROOT_PASSWORD: abc123
+    volumes:
+      # 挂载数据目录
+      - ./mysql/data:/var/lib/mysql
+      # 挂载配置文件目录
+      - ./mysql/conf:/etc/mysql/conf.d
+      - ./mysql/logs:/logs

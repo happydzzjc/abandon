@@ -1,0 +1,22 @@
+server:
+  port: 23520
+
+rocketmq:
+  # name-server 部署的服务器IP端口
+  name-server: 172.16.5.27:9876
+  # 生产者
+  producer:
+    # 生产组
+    group: ABANDON_RMQ_GROUP
+    # 消息发送超时时间
+    send-message-timeout: 10000
+    # 消息最大长度4M
+    max-message-size: 4096
+    # 消息发送失败重试次数
+    retry-times-when-send-failed: 3
+    # 异步消息发送失败重试次数
+    retry-times-when-send-async-failed: 2
+  # 消费者
+  consumer:
+    # 每次提取的最大消息数
+    pull-batch-size: 5

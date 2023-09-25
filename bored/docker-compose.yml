@@ -40,7 +40,7 @@ services:
       JAVA_OPT_EXT: "-server -Xms256m -Xmx1024m"
     volumes:
       - ./rmq/namesrv/logs:/home/rocketmq/logs/rocketmqlogs
-      - ./rmq/namesrv/store:/root/store
+      - ./rmq/namesrv/store:/home/rocketmq/store
     command: ["sh", "mqnamesrv"]
 
   rmq_broker:
@@ -50,8 +50,8 @@ services:
       - "10909:10909"
       - "10911:10911"
     volumes:
-      - ./rmq/broker/logs:/root/logs
-      - ./rmq/broker/store:/root/store
+      - ./rmq/broker/logs:/home/rocketmq/logs
+      - ./rmq/broker/store:/home/rocketmq/store
       - ./rmq/broker/conf/broker.conf:/home/rocketmq/broker.conf
     links:
       - rmq_namesrv:namesrv

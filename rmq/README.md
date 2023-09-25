@@ -12,3 +12,4 @@
 4. 启动spring项目
 5. postman调用ProducerController下的接口
 
+参考：https://blog.csdn.net/Yin_Tian?type=blog
